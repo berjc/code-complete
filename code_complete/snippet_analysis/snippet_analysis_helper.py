@@ -21,8 +21,10 @@ class SnippetAnalysisHelper:
     def __init__(self, language_mode=LanguageMode.python):
         self.word_operator = "operator"
         self.word_unknown = "unknown"
+        self.word_wildcard = "wildcard"
         self.language_mode = language_mode
         self.unique_identifier = "redirected_output_hiw_unique"
+        self.filename = "code_complete_temp_file.py"
 
         if language_mode == LanguageMode.python:
             self.operators = ['+', '-', '/', '*', '(', ')', '[', ']', '{', '}', ',']
@@ -30,6 +32,7 @@ class SnippetAnalysisHelper:
             self.scope_indicators = ['def']
             self.scope_break_indicators = ['return']
             self.ignore_flags = ['print', 'raw_input']
+            self.ignore_classes = ['function']
 
     def exec_wrapper(self, code_to_execute):
         """ This static method takes in a string, which is a valid code snippet. The code is then run and the output of
