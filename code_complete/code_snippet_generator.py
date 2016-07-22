@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-""" Encapsulates Functionality for Generating Code Snippets from a Task Description. """
+""" Encapsulates Functionality for Generating Code Snippets for a Task Description. """
 
 from config import LANGUAGE
 from code_snippet_providers.github_code_snippet_provider import GithubCodeSnippetProvider
@@ -30,7 +30,7 @@ class CodeSnippetGenerator(object):
             self._code_snippet_providers.append(code_snippet_provider(task_description, LANGUAGE))
 
     def generate_code_snippets(self):
-        """ Generate code snippets for the task description.
+        """ Generates and returns code snippets for the task description.
 
         :return: A list of code snippets represented as strings.
         :rtype: list

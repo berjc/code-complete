@@ -7,23 +7,9 @@ import os
 
 from code_completer import CodeCompleter
 from code_snippet_generator import CodeSnippetGenerator
+from config import READ_OPT
 from config import TASK_INDICATOR
 from task_descriptor import TaskDescriptor
-
-
-class TaskSolutionGenerator(object):
-
-    def __init__(self, task_descriptors, code_snippets_for_task_descriptors):
-        pass
-
-    def get_task_solutions(self):
-        return [
-            [('def add_two_numbers(a, b):\n    return a + b\n', ['x', 'y'], ['z'], 'add_two_numbers')],
-            [
-                ('def multiply_two_numbers(a, b):\n    return a - b\n', ['x', 'y'], ['z'], 'multiply_two_numbers'),
-                ('def multiply_two_numbers(a, b):\n    return a * b\n', ['x', 'y'], ['z'], 'multiply_two_numbers'),
-            ],
-        ]
 
 
 class Compiler(object):
@@ -34,11 +20,8 @@ class Compiler(object):
     :attr _tests_f: A path to the tests to be used to verify code completion.
     :type _tests_f: str
     """
-    READ_OPT = 'r'
-    WRITE_OPT = 'w'
-
     def __init__(self, code_f, tests_f):
-        """
+        """ Initializes the `Compiler` object.
 
         :param code_f: A path to the file to code complete.
         :type code_f: str
@@ -61,6 +44,7 @@ class Compiler(object):
         code_snippets = []
         for task_descriptor in task_descriptors:
             code_snippets.append(CodeSnippetGenerator(task_descriptor.get_task_description()))
+        return code_snippets
 
     def _extract_tasks_from_code(self):
         """ Extract tasks from code file.
@@ -69,7 +53,7 @@ class Compiler(object):
         :rtype: list
         """
         task_descriptors = []
-        with open(self._code_f, Compiler.READ_OPT) as code_f:
+        with open(self._code_f, READ_OPT) as code_f:
             for line in code_f:
                 cleaned_line = line.strip()
                 if cleaned_line.startswith(TASK_INDICATOR):
@@ -78,12 +62,10 @@ class Compiler(object):
 
     def compile(self):
         """ Compiles code file to code completion using tests as verification. """
+        # TODO : Put right thing in ...
         task_descriptors = self._extract_tasks_from_code()
         code_snippets_for_task_descriptors = self._get_code_snippets_for_task_descriptors(task_descriptors)
-        task_solutions = TaskSolutionGenerator(
-            task_descriptors,
-            code_snippets_for_task_descriptors,
-        ).get_task_solutions()
+        task_solutions = ...(task_descriptors, code_snippets_for_task_descriptors).get_task_solutions()
         CodeCompleter(self._code_f, self._tests_f, task_descriptors, task_solutions).complete()
 
 

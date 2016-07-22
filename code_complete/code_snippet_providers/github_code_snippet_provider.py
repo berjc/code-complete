@@ -17,7 +17,7 @@ class GithubCodeSnippetProvider(AbstractCodeSnippetProvider):
     SPACE_DELIM = '+'
 
     # The number of search pages to iterate through on Github.
-    NUM_PAGES_TO_CHECK = 1  # TODO: This should belong to a configuration file.
+    NUM_PAGES_TO_CHECK = 1
 
     GITHUB_DOMAIN = 'github.com'
     GITHUB_SEARCH_PATH = '/search'

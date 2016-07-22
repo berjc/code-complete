@@ -35,7 +35,8 @@ class TaskDescriptor(object):
         :param comment: A comment containing task information.
         :type comment: str
 
-        :return: A 3-Tuple containing the task description, task input information, and task output information.
+        :return: A 3-Tuple containing the task description, the task input information, and the task output information,
+            respectively.
         :rtype: tuple
 
         Example of a task comment:

@@ -8,6 +8,9 @@ import re
 import shutil
 import subprocess
 
+from config import READ_OPT
+from config import WRITE_OPT
+
 
 class CodeCompleter(object):
     """ Encapsulates Functionality for Testing and Iterating on the Code Completed File.
@@ -20,27 +23,28 @@ class CodeCompleter(object):
     :type _tests_f: str
     :attr _task_descriptors: A list of `TaskDescriptor` objects encapsulating the completion tasks.
     :type _task_descriptors: list
-    :attr _task_solutions: ...
+    :attr _task_solutions:
     :type _task_solutions: list
     """
-    READ_OPT = 'r'
-    WRITE_OPT = 'w'
-
+    # TODO : Fix _task_solutions comment above
     UNITTEST_OK = 'OK'
     UNITTEST_FAILURE_REGEX = r'FAILED \((.*)=(.*)\)'
     UNITTEST_FAILURE_REGEX_GROUP_INDEX = 2
 
     PATH_DELIM = '/'
     COMMA_DELIM = ','
-    OUTER_PAREN = ')'
     EQUALS_DELIM = '='
     NEW_LINE_DELIM = '\n'
 
     ORIGINAL_EXTENSION = '%s.original'
     PREVIOUS_EXTENSION = '%s.previous'
 
-    CMD_LINE_PYTHON = 'python %s'
-    PYC_FILES = '%s/*.pyc'
+    RUN_PYTHON_SCRIPT_CMD = 'python %s'
+    ALL_PYC_FILES = '%s/*.pyc'
+
+    APPEND_FUNCTION_STUB_TEMPLATE = '\n%s'
+    FUNCTION_STUB_TEMPLATE = '%s%s(%s)'
+    SET_VARIABLE_TEMPLATE = '%s %s '
 
     def __init__(self, code_f, tests_f, task_descriptors, task_solutions):
         """ Initializes the `CodeCompleter` object.
@@ -54,6 +58,7 @@ class CodeCompleter(object):
         :param task_solutions: ...
         :type task_solutions: list
         """
+        # TODO : Fix task_solutions comment above
         self._current_code_f = code_f
         self._original_code_f = code_f
         self._tests_f = tests_f
@@ -61,8 +66,8 @@ class CodeCompleter(object):
         self._task_solutions = task_solutions
 
     @staticmethod
-    def _parse_test_results(results):
-        """ Parses the number of tests failures from `unittest` output.
+    def _parse_unittest_results(results):
+        """ Parses the number of test failures from `unittest.main()` output.
 
         Examples of the last line of the `unittest.main()` output.
 
@@ -85,9 +90,9 @@ class CodeCompleter(object):
             )
 
     def _remove_compiled_code(self):
-        """ Removes compiled python files from code file's location. """
+        """ Removes compiled python files from the code file's location. """
         path_to_code_file = CodeCompleter.PATH_DELIM.join(self._current_code_f.split(CodeCompleter.PATH_DELIM)[:-1])
-        for f in glob.glob(CodeCompleter.PYC_FILES % path_to_code_file):
+        for f in glob.glob(CodeCompleter.ALL_PYC_FILES % path_to_code_file):
             os.remove(f)
 
     def _run_tests(self):
@@ -96,9 +101,13 @@ class CodeCompleter(object):
         :return: The number of tests that failed.
         :rtype: int
         """
-        process = subprocess.Popen(CodeCompleter.CMD_LINE_PYTHON % self._tests_f, shell=True, stderr=subprocess.PIPE)
+        process = subprocess.Popen(
+            CodeCompleter.RUN_PYTHON_SCRIPT_CMD % self._tests_f,
+            shell=True,
+            stderr=subprocess.PIPE,
+        )
         stdout, stderr = process.communicate()
-        return CodeCompleter._parse_test_results(stderr.strip())
+        return CodeCompleter._parse_unittest_results(stderr.strip())
 
     def _attempt_to_solve_task(self, task_descriptor, task_solution):
         """ Attempt to solve task with the given task descriptor using the given task solution.
@@ -110,12 +119,12 @@ class CodeCompleter(object):
         """
         # TODO : Fix `task_solution` comment.
         stub_function, input_list, output_list, function_name = task_solution
-        current_code_f_contents = open(self._current_code_f, CodeCompleter.READ_OPT).read()
-        current_code_f_contents += '%s%s' % (CodeCompleter.NEW_LINE_DELIM, stub_function)
+        current_code_f_contents = open(self._current_code_f, READ_OPT).read()
+        current_code_f_contents += CodeCompleter.APPEND_FUNCTION_STUB_TEMPLATE % stub_function
         current_code_f_contents = current_code_f_contents.replace(
             task_descriptor.get_task_id(),
-            '%s%s(%s)' % (
-                '%s %s ' % (
+            CodeCompleter.FUNCTION_STUB_TEMPLATE % (
+                CodeCompleter.SET_VARIABLE_TEMPLATE % (
                     CodeCompleter.COMMA_DELIM.join(output_list),
                     CodeCompleter.EQUALS_DELIM,
                 ) if output_list else '',
@@ -123,7 +132,7 @@ class CodeCompleter(object):
                 CodeCompleter.COMMA_DELIM.join(input_list),
             ),
         )
-        open(self._current_code_f, CodeCompleter.WRITE_OPT).write(current_code_f_contents)
+        open(self._current_code_f, WRITE_OPT).write(current_code_f_contents)
 
     def complete(self):
         """ Complete all tasks. """
@@ -131,7 +140,7 @@ class CodeCompleter(object):
         shutil.copyfile(self._original_code_f, CodeCompleter.ORIGINAL_EXTENSION % self._original_code_f)
         num_of_tests_failed = self._run_tests()
         for task_descriptor, task_solutions in zip(self._task_descriptors, self._task_solutions):
-            # Make a copy of the current code file.
+            # Make a copy of the current code file so that we can revert to it if the test verification fails.
             shutil.copyfile(self._current_code_f, CodeCompleter.PREVIOUS_EXTENSION % self._current_code_f)
             for task_solution in task_solutions:
                 self._attempt_to_solve_task(task_descriptor, task_solution)
@@ -142,3 +151,4 @@ class CodeCompleter(object):
                     break
                 else:
                     shutil.copyfile(CodeCompleter.PREVIOUS_EXTENSION % self._current_code_f, self._current_code_f)
+        os.remove(CodeCompleter.PREVIOUS_EXTENSION % self._current_code_f)

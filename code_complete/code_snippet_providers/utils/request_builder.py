@@ -18,6 +18,12 @@ class RequestBuilder(object):
     DEFAULT_PATH = ''
     DEFAULT_SCHEME = 'https'
 
+    QUERY_DELIM = '?'
+    QUERY_KEY_VALUE_DELIM = '&'
+    QUERY_KEY_VALUE_TEMPLATE = '%s=%s'
+
+    URL_TEMPLATE = '%s://%s%s%s'
+
     def __init__(self, domain, path=None, scheme=None, params=None):
         """ Initializes the `RequestBuilder` object.
 
@@ -41,7 +47,9 @@ class RequestBuilder(object):
         :return: The request as a well-formed URL.'
         :rtype: str
         """
-        params_string = '?' if self._params else ''
+        params_string = RequestBuilder.QUERY_DELIM if self._params else ''
         for key, value in self._params.iteritems():
-            params_string += '&%s=%s' % (key, str(value))
-        return '%s://%s%s%s' % (self._scheme, self._domain, self._path, params_string)
+            params_string += RequestBuilder.QUERY_KEY_VALUE_DELIM.join(
+                RequestBuilder.QUERY_KEY_VALUE_TEMPLATE % (key, str(value))
+            )
+        return RequestBuilder.URL_TEMPLATE % (self._scheme, self._domain, self._path, params_string)
