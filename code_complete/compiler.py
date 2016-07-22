@@ -8,6 +8,7 @@ import itertools
 import optparse
 import os
 import types
+from snippet_analysis.snippet_controller import SnippetController
 
 from code_completer import CodeCompleter
 from code_snippet_generator import CodeSnippetGenerator
@@ -27,31 +28,16 @@ class TaskSolutionGenerator(object):
         for task_descriptor, code_snippets in zip(self._task_descriptors, self._code_snippets):
             task_solutions = []
             for code_snippet in code_snippets:
-                tmp = 'tmp_program_jail_%s.py' % id(code_snippet)
-                open('code_complete/%s' % tmp, 'w').write(code_snippet + '\nALL_GLOBALS = dir()')
-                stub_names = []
-                try:
-                    tmp_program_jail = importlib.__import__(tmp)
-                    reload(tmp_program_jail)
-                    for object_name in tmp_program_jail.ALL_GLOBALS:
-                        if not object_name.startswith('__') and isinstance(eval('tmp_program_jail.%s' % object_name), types.FunctionType):
-                            stub_names.append(object_name)
-                except:
-                    pass
-                for stub_name in stub_names:
-                    for inputs in itertools.permutations(task_descriptor.get_task_input_info()):
-                        for outputs in itertools.permutations(task_descriptor.get_task_output_info()):
-                            try:
-                                task_solutions.append(
-                                    (''.join(inspect.getsourcelines(eval('tmp_program_jail.%s' % stub_name))[0]), inputs, outputs, stub_name)
-                                )
-                            except:
-                                pass
-                os.remove(tmp)
-                try:
-                    os.remove('%sc' % tmp)
-                except OSError:
-                    pass
+                snippet_controller = SnippetController(code_snippet, task_descriptor.get_task_input_info(),
+                                                       task_descriptor.get_task_description())
+                match_functions, detail_functions = snippet_controller.find_snippet()
+
+                for function in match_functions:
+                    for combination in detail_functions[function][3]:
+                        task_solutions.append([detail_functions[function][0][0],
+                                            [x[0] for x in combination],
+                                            task_descriptor.get_task_output_info.keys(),
+                                            function])
             self._task_solutions.append(task_solutions)
         return self._task_solutions
 
