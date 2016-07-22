@@ -8,17 +8,16 @@ from fuzzywuzzy import process
 class SnippetMatcher:
     """ This class matches functions based on argument type and function name
 
-    :param global_type_dict: dictionary of global variables
-    :param type_dict: dictionary of all global variables
-    :param snippet: The entire snippet
+    :param snippet_analyser: A SnippetAnalyser
     :param task_arguments: The arguments required in task
     :param task_comment: The comment provided by user
     """
-    def __init__(self, global_type_dict, type_dict, snippet, task_arguments, task_comment):
-        self.global_types = global_type_dict
-        self.all_types = type_dict
-        self.snippet = snippet
-        self.functions = {}                             # { func1 {arg1 : type1, arg2 : type2 }, func2 ... }
+    def __init__(self, snippet_analyser, task_arguments, task_comment):
+        self.global_types = snippet_analyser.global_type_dict
+        self.all_types = snippet_analyser.type_dict
+        self.snippet = snippet_analyser.snippet
+        self.functions = snippet_analyser.functions
+        self.helper = snippet_analyser.helper
         self.task_arguments = task_arguments            # { func1 {arg1 : type1, arg2 : type2 }, func2 ... }
         self.task_comment = task_comment
         self.matched_functions_arguments = []
@@ -32,7 +31,8 @@ class SnippetMatcher:
         :return: A list of ordered matched functions
         :rtype list
         """
-        self.populate_function_names()
+        if len(self.functions.keys()) == 0:
+            self.populate_function_names()
         self.populate_function_arguments()
         self.match_functions_argument_name()
         self.match_functions_argument_type()
@@ -56,28 +56,12 @@ class SnippetMatcher:
         :return: None
         """
         for function in self.functions.keys():
-            snippet = self.snippet
-            arguments_found = False
+            arguments = self.functions[function][1]
+            temp_dict = dict()
+            for argument_name in arguments.keys():
+                temp_dict[argument_name] = self.all_types[argument_name]
 
-            while len(snippet) > 0:
-                argument_names = snippet[snippet.find(function):]
-                argument_names = argument_names[argument_names.find("(")+1:argument_names.find(")")]
-                argument_names = argument_names.split(",")
-                for argument in argument_names:
-                    if argument not in self.all_types.keys():
-                        snippet = snippet[snippet.find(function) + len(function):]
-                        continue
-                arguments_found = True
-                break
-
-            if not arguments_found:
-                raise Exception("Could not match analyzed types to actual types for function %s" % function)
-
-            arguments = {}
-            for argument_name in argument_names:
-                arguments[argument_name] = self.all_types.get(argument_name)
-
-            self.functions[function] = arguments
+            self.functions[function] = [self.functions[function][0], temp_dict]
 
     def match_functions_argument_type(self):
         """ This function populates self.matched_functions_arguments with stub_functions that fit the bill
@@ -85,16 +69,12 @@ class SnippetMatcher:
 
         :return: None
         """
-        for function, arguments in self.functions.iteritems():
-            all_combinations = self.match_argument_types(arguments)
+        for function in self.functions:
+            all_combinations = self.match_argument_types(self.functions[function][1])
+            self.functions[function] = [self.functions[function][0], self.functions[function][1], all_combinations]
             if not len(all_combinations):
                 continue
             self.matched_functions_arguments.append(function)
-
-        try:
-            assert len(self.matched_functions_arguments), "No functions match for argument types for function %s" % function
-        except AssertionError:
-            pass
 
     def match_functions_argument_name(self):
         """ This function populates self.matched_functions_name with tuples of (stub_functions, match_ratio)
@@ -134,7 +114,7 @@ class SnippetMatcher:
 
         for tup in all_combinations:
             # tup is of form ( {'x' : type}, {'a' : type} )
-            if tup[0].values()[0] != tup[1].values()[0]:
+            if tup[0].values()[0] != tup[1].values()[0] and tup[0].values()[0] != self.helper.word_wildcard:
                 all_combinations.remove(tup)
 
         useful_combinations = []

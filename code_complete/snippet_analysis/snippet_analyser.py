@@ -1,4 +1,7 @@
 from snippet_analysis_helper import SnippetAnalysisHelper
+import inspect
+import importlib
+import types
 
 
 class SnippetAnalyser:
@@ -20,6 +23,9 @@ class SnippetAnalyser:
         self.snippet_word_array = [[]]          # A 2D list of all words
         self.scope_flag = 0                     # A flag to keep track of current scope level
         self.helper = SnippetAnalysisHelper(language_mode)
+        self.module = None
+        self.functions = {}                     # A dictionary of functions. Contains
+                                                # { func1 : [ "function stub", { arg1 : type, arg2 : type ...}], ... }
 
     def execute(self):
         """ This function prepares the inputs and then executes the needed analysis. The types are stored in type_list
@@ -27,18 +33,44 @@ class SnippetAnalyser:
         :return: None
         """
         self.prepare_data()
+        self.analyze_functions_in_snippet()
         self.find_types()
         self.type_dict = self.helper.clean_dict(self.type_dict)
         self.global_type_dict = self.helper.clean_dict(self.global_type_dict)
         self.helper.reset_stdout()
+
+    def analyze_functions_in_snippet(self):
+        """ This function populates self.functions
+
+        :return: None
+        """
+        temp_file = open(self.helper.filename, 'w+')
+        temp_file.write(self.snippet)
+        temp_file.close()
+
+        self.module = importlib.import_module(self.helper.filename[:-3])
+
+        for function in dir(self.module):
+            if not isinstance(self.module.__dict__.get(function), types.FunctionType):
+                continue
+            if function[0] == '_':
+                continue
+            else:
+                self.functions[function] = []
+        for function in self.functions.keys():
+            temp_dict = dict()
+            for argument in inspect.getargspec(getattr(self.module, function))[0]:
+                temp_dict[argument] = ''
+            self.functions[function] = [inspect.getsourcelines(getattr(self.module, function)), temp_dict]
 
     def prepare_data(self):
         """ This function does the pre-analysis by preparing the data for analysis. This also populates line_dict
 
          :return: None
          """
+        self.snippet = self.snippet.replace('print ', '#')
         snippet = self.snippet.replace('\t', ' ')
-        
+
         for index, line in enumerate(self.snippet.split('\n')):
             self.line_dict[index] = line
 
@@ -175,9 +207,18 @@ class SnippetAnalyser:
                     if is_global:
                         self.global_type_dict[word] = self.helper.word_unknown
             else:
-                self.type_dict[word] = self.helper.clean_type(output)
-                if is_global:
-                    self.global_type_dict[word] = self.helper.clean_type(output)
+                if word in self.functions.keys():
+                    return
+                elif self.helper.clean_type(output) in self.helper.ignore_classes:
+                    return
+                elif output == '':
+                    self.type_dict[word] = self.helper.word_wildcard
+                    if is_global:
+                        self.type_dict[word] = self.helper.word_wildcard
+                else:
+                    self.type_dict[word] = self.helper.clean_type(output)
+                    if is_global:
+                        self.global_type_dict[word] = self.helper.clean_type(output)
         except:
             self.type_dict[word] = self.helper.word_unknown
             if is_global:
