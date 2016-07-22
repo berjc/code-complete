@@ -2,6 +2,8 @@ import sys
 import os
 from cStringIO import StringIO
 from enum import Enum
+import random
+import string
 
 
 class LanguageMode(Enum):
@@ -24,7 +26,8 @@ class SnippetAnalysisHelper:
         self.word_wildcard = "wildcard"
         self.language_mode = language_mode
         self.unique_identifier = "redirected_output_hiw_unique"
-        self.filename = "code_complete_temp_file.py"
+        self.filename = "code_complete_temp_file_" + ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(6)) + ".py"
+
 
         if language_mode == LanguageMode.python:
             self.operators = ['+', '-', '/', '*', '(', ')', '[', ']', '{', '}', ',']
@@ -51,7 +54,10 @@ class SnippetAnalysisHelper:
             os.popen(code_to_execute)
 
         elif self.language_mode == LanguageMode.python:
-            exec code_to_execute
+            try:
+                exec code_to_execute
+            except:
+                return ''
 
         sys.stdout = old_stdout
         self.reset_stdout()

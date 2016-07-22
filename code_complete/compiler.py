@@ -33,10 +33,10 @@ class TaskSolutionGenerator(object):
                 match_functions, detail_functions = snippet_controller.find_snippet()
 
                 for function in match_functions:
-                    for combination in detail_functions[function][3]:
-                        task_solutions.append([detail_functions[function][0][0],
+                    for combination in detail_functions[function][2]:
+                        task_solutions.append([''.join(detail_functions[function][0][0]),
                                             [x[0] for x in combination],
-                                            task_descriptor.get_task_output_info.keys(),
+                                            task_descriptor.get_task_output_info().keys(),
                                             function])
             self._task_solutions.append(task_solutions)
         return self._task_solutions

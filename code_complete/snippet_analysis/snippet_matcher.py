@@ -12,10 +12,10 @@ class SnippetMatcher:
     :param task_arguments: The arguments required in task
     :param task_comment: The comment provided by user
     """
-    def __init__(self, snippet_analyser, task_arguments, task_comment):
+    def __init__(self, snippet_analyser, snippet, task_arguments, task_comment):
         self.global_types = snippet_analyser.global_type_dict
         self.all_types = snippet_analyser.type_dict
-        self.snippet = snippet_analyser.snippet
+        self.snippet = snippet
         self.functions = snippet_analyser.functions
         self.helper = snippet_analyser.helper
         self.task_arguments = task_arguments            # { func1 {arg1 : type1, arg2 : type2 }, func2 ... }
@@ -59,7 +59,10 @@ class SnippetMatcher:
             arguments = self.functions[function][1]
             temp_dict = dict()
             for argument_name in arguments.keys():
-                temp_dict[argument_name] = self.all_types[argument_name]
+                try:
+                    temp_dict[argument_name] = self.all_types[argument_name]
+                except KeyError:
+                    return
 
             self.functions[function] = [self.functions[function][0], temp_dict]
 

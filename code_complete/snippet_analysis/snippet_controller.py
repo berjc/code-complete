@@ -16,6 +16,7 @@ class SnippetController:
     def analyze(self):
         self.snippet_analyser.execute()
         self.snippet_matcher = SnippetMatcher(self.snippet_analyser,
+                                              self.snippet,
                                               self.task_arguments,
                                               self.task_comment)
         self.snippet_matcher.match_functions()
@@ -44,23 +45,3 @@ class SnippetController:
         self.analyze()
         self.clean()
         return self.snippet_matcher.match_functions(), self.snippet_matcher.functions
-
-if __name__ == "__main__":
-    snippet = """
-def concat_string(x,y):
-    return x+y
-
-def add_two_numbers(a,b):
-    return a+b
-
-def subtract_two_numbers(c,d):
-    return c-d
-
-def sort_a_list(u_list):
-    return u_list.sort()
-
-print "hello"
-"""
-    sc = SnippetController(snippet, {'a1': 'int', 'b1': 'int'}, "subtract two numbers", LanguageMode.python, True)
-    sc.analyze()
-    sc.clean()
