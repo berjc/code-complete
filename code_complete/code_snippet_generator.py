@@ -36,5 +36,5 @@ class CodeSnippetGenerator(object):
         :rtype: list
         """
         for code_snippet_provider in self._code_snippet_providers:
-            self._code_snippets += code_snippet_provider.get_snippets()
+            self._code_snippets += code_snippet_provider.get_code_snippets()
         return self._code_snippets

@@ -12,6 +12,7 @@ from config import READ_OPT
 from config import WRITE_OPT
 
 
+# TODO : Fix Task Solution Comment
 class CodeCompleter(object):
     """ Encapsulates Functionality for Testing and Iterating on the Code Completed File.
 
@@ -26,7 +27,6 @@ class CodeCompleter(object):
     :attr _task_solutions:
     :type _task_solutions: list
     """
-    # TODO : Fix _task_solutions comment above
     UNITTEST_OK = 'OK'
     UNITTEST_FAILURE_REGEX = r'FAILED \((.*)=(.*)\)'
     UNITTEST_FAILURE_REGEX_GROUP_INDEX = 2
@@ -58,7 +58,6 @@ class CodeCompleter(object):
         :param task_solutions: ...
         :type task_solutions: list
         """
-        # TODO : Fix task_solutions comment above
         self._current_code_f = code_f
         self._original_code_f = code_f
         self._tests_f = tests_f
@@ -117,7 +116,6 @@ class CodeCompleter(object):
         :param task_solution:
         :type task_solution:
         """
-        # TODO : Fix `task_solution` comment.
         stub_function, input_list, output_list, function_name = task_solution
         current_code_f_contents = open(self._current_code_f, READ_OPT).read()
         current_code_f_contents += CodeCompleter.APPEND_FUNCTION_STUB_TEMPLATE % stub_function

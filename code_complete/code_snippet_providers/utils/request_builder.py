@@ -48,8 +48,7 @@ class RequestBuilder(object):
         :rtype: str
         """
         params_string = RequestBuilder.QUERY_DELIM if self._params else ''
-        for key, value in self._params.iteritems():
-            params_string += RequestBuilder.QUERY_KEY_VALUE_DELIM.join(
-                RequestBuilder.QUERY_KEY_VALUE_TEMPLATE % (key, str(value))
-            )
+        params_string += RequestBuilder.QUERY_KEY_VALUE_DELIM.join([
+            RequestBuilder.QUERY_KEY_VALUE_TEMPLATE % (key, str(value)) for key, value in self._params.iteritems()
+        ])
         return RequestBuilder.URL_TEMPLATE % (self._scheme, self._domain, self._path, params_string)

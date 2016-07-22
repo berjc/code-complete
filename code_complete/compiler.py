@@ -2,14 +2,58 @@
 
 """ Encapsulates the CodeComplete Compiler. """
 
+import importlib
+import inspect
+import itertools
 import optparse
 import os
+import types
 
 from code_completer import CodeCompleter
 from code_snippet_generator import CodeSnippetGenerator
 from config import READ_OPT
 from config import TASK_INDICATOR
 from task_descriptor import TaskDescriptor
+
+
+class TaskSolutionGenerator(object):
+
+    def __init__(self, task_descriptors, code_snippets_for_task_descriptors):
+        self._task_solutions = []
+        self._task_descriptors = task_descriptors
+        self._code_snippets = code_snippets_for_task_descriptors
+
+    def get_task_solutions(self):
+        for task_descriptor, code_snippets in zip(self._task_descriptors, self._code_snippets):
+            task_solutions = []
+            for code_snippet in code_snippets:
+                tmp = 'tmp_program_jail_%s.py' % id(code_snippet)
+                open('code_complete/%s' % tmp, 'w').write(code_snippet + '\nALL_GLOBALS = dir()')
+                stub_names = []
+                try:
+                    tmp_program_jail = importlib.__import__(tmp)
+                    reload(tmp_program_jail)
+                    for object_name in tmp_program_jail.ALL_GLOBALS:
+                        if not object_name.startswith('__') and isinstance(eval('tmp_program_jail.%s' % object_name), types.FunctionType):
+                            stub_names.append(object_name)
+                except:
+                    pass
+                for stub_name in stub_names:
+                    for inputs in itertools.permutations(task_descriptor.get_task_input_info()):
+                        for outputs in itertools.permutations(task_descriptor.get_task_output_info()):
+                            try:
+                                task_solutions.append(
+                                    (''.join(inspect.getsourcelines(eval('tmp_program_jail.%s' % stub_name))[0]), inputs, outputs, stub_name)
+                                )
+                            except:
+                                pass
+                os.remove(tmp)
+                try:
+                    os.remove('%sc' % tmp)
+                except OSError:
+                    pass
+            self._task_solutions.append(task_solutions)
+        return self._task_solutions
 
 
 class Compiler(object):
@@ -43,7 +87,7 @@ class Compiler(object):
         """
         code_snippets = []
         for task_descriptor in task_descriptors:
-            code_snippets.append(CodeSnippetGenerator(task_descriptor.get_task_description()))
+            code_snippets.append(CodeSnippetGenerator(task_descriptor.get_task_description()).generate_code_snippets())
         return code_snippets
 
     def _extract_tasks_from_code(self):
@@ -62,10 +106,12 @@ class Compiler(object):
 
     def compile(self):
         """ Compiles code file to code completion using tests as verification. """
-        # TODO : Put right thing in ...
         task_descriptors = self._extract_tasks_from_code()
         code_snippets_for_task_descriptors = self._get_code_snippets_for_task_descriptors(task_descriptors)
-        task_solutions = ...(task_descriptors, code_snippets_for_task_descriptors).get_task_solutions()
+        task_solutions = TaskSolutionGenerator(
+            task_descriptors,
+            code_snippets_for_task_descriptors,
+        ).get_task_solutions()
         CodeCompleter(self._code_f, self._tests_f, task_descriptors, task_solutions).complete()
 
 
