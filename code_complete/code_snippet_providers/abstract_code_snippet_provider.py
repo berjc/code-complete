@@ -3,7 +3,7 @@
 """ Encapsulates the Base API for Snippet Providers. """
 
 
-class AbstractSnippetProvider(object):
+class AbstractCodeSnippetProvider(object):
     """ A Template Class for Snippet Providers.
 
     :attr _snippets: A list of code snippets represented as strings.
@@ -14,7 +14,7 @@ class AbstractSnippetProvider(object):
     :type _language: str
     """
     def __init__(self, task_description, language):
-        """ Initializes the `AbstractSnippetProvider` object.
+        """ Initializes the `AbstractCodeSnippetProvider` object.
 
         :param task_description: A description of the task to complete.
         :type task_description: str

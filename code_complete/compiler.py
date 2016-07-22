@@ -1,12 +1,29 @@
 # -*- coding: utf-8 -*-
 
-"""  """
+""" Encapsulates the CodeComplete Compiler. """
 
 import optparse
 import os
 
+from code_completer import CodeCompleter
+from code_snippet_generator import CodeSnippetGenerator
 from config import TASK_INDICATOR
 from task_descriptor import TaskDescriptor
+
+
+class TaskSolutionGenerator(object):
+
+    def __init__(self, task_descriptors, code_snippets_for_task_descriptors):
+        pass
+
+    def get_task_solutions(self):
+        return [
+            [('def add_two_numbers(a, b):\n    return a + b\n', ['x', 'y'], ['z'], 'add_two_numbers')],
+            [
+                ('def multiply_two_numbers(a, b):\n    return a - b\n', ['x', 'y'], ['z'], 'multiply_two_numbers'),
+                ('def multiply_two_numbers(a, b):\n    return a * b\n', ['x', 'y'], ['z'], 'multiply_two_numbers'),
+            ],
+        ]
 
 
 class Compiler(object):
@@ -18,6 +35,7 @@ class Compiler(object):
     :type _tests_f: str
     """
     READ_OPT = 'r'
+    WRITE_OPT = 'w'
 
     def __init__(self, code_f, tests_f):
         """
@@ -30,7 +48,21 @@ class Compiler(object):
         self._code_f = code_f
         self._tests_f = tests_f
 
-    def _extract_tasks(self):
+    @staticmethod
+    def _get_code_snippets_for_task_descriptors(task_descriptors):
+        """ Returns the code snippets found by the `CodeSnippetGenerator` for each task descriptor.
+
+        :param task_descriptors: A list of `TaskDescriptor` objects encapsulating the completion tasks.
+        :type: list
+
+        :return: The code snippets found by the `CodeSnippetGenerator` for each task descriptor.
+        :rtype: list
+        """
+        code_snippets = []
+        for task_descriptor in task_descriptors:
+            code_snippets.append(CodeSnippetGenerator(task_descriptor.get_task_description()))
+
+    def _extract_tasks_from_code(self):
         """ Extract tasks from code file.
 
         :return: A list of `TaskDescriptor` objects encapsulating the completion tasks found in the code file.
@@ -43,6 +75,16 @@ class Compiler(object):
                 if cleaned_line.startswith(TASK_INDICATOR):
                     task_descriptors.append(TaskDescriptor(cleaned_line))
         return task_descriptors
+
+    def compile(self):
+        """ Compiles code file to code completion using tests as verification. """
+        task_descriptors = self._extract_tasks_from_code()
+        code_snippets_for_task_descriptors = self._get_code_snippets_for_task_descriptors(task_descriptors)
+        task_solutions = TaskSolutionGenerator(
+            task_descriptors,
+            code_snippets_for_task_descriptors,
+        ).get_task_solutions()
+        CodeCompleter(self._code_f, self._tests_f, task_descriptors, task_solutions).complete()
 
 
 # Setup the Command-Line Option Parser.
@@ -64,4 +106,4 @@ if __name__ == '__main__':
     elif not os.path.exists(options.test_f):
         parser.error('File at `%s` does not exist.' % options.test_f)
 
-    compiler = Compiler(options.code_f, options.test_f)
+    Compiler(options.code_f, options.test_f).compile()

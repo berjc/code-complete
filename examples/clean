@@ -1,0 +1,2 @@
+cp copy_example.py example.py
+rm example.py.original example.py.previous example.pyc
