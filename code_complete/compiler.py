@@ -31,8 +31,7 @@ class TaskSolutionGenerator(object):
                 open('code_complete/%s' % tmp, 'w').write(code_snippet + '\nALL_GLOBALS = dir()')
                 stub_names = []
                 try:
-                    tmp_program_jail = importlib.__import__(tmp)
-                    reload(tmp_program_jail)
+                    tmp_program_jail = importlib.import_module(tmp.split('.')[0])
                     for object_name in tmp_program_jail.ALL_GLOBALS:
                         if not object_name.startswith('__') and isinstance(eval('tmp_program_jail.%s' % object_name), types.FunctionType):
                             stub_names.append(object_name)
@@ -47,12 +46,13 @@ class TaskSolutionGenerator(object):
                                 )
                             except:
                                 pass
-                os.remove(tmp)
+                os.remove('code_complete/%s' % tmp)
                 try:
                     os.remove('%sc' % tmp)
                 except OSError:
                     pass
             self._task_solutions.append(task_solutions)
+        print self._task_solutions
         return self._task_solutions
 
 

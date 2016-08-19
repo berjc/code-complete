@@ -12,6 +12,8 @@ from config import READ_OPT
 from config import WRITE_OPT
 
 
+LINE = '=' * 100
+
 # TODO : Fix Task Solution Comment
 class CodeCompleter(object):
     """ Encapsulates Functionality for Testing and Iterating on the Code Completed File.
@@ -28,8 +30,7 @@ class CodeCompleter(object):
     :type _task_solutions: list
     """
     UNITTEST_OK = 'OK'
-    UNITTEST_FAILURE_REGEX = r'FAILED \((.*)=(.*)\)'
-    UNITTEST_FAILURE_REGEX_GROUP_INDEX = 2
+    UNITTEST_FAILURE_REGEX = r'\d+'
 
     PATH_DELIM = '/'
     COMMA_DELIM = ','
@@ -76,17 +77,16 @@ class CodeCompleter(object):
 
             FAILED (failures=1)  # <-- Signals 1 test failed.
         """
+        print results
         last_line = results.split(CodeCompleter.NEW_LINE_DELIM)[-1].strip()
         if last_line == CodeCompleter.UNITTEST_OK:
             return 0
+        elif not last_line.startswith('FAILED'):
+            return None
         else:
-            return int(
-                re.search(
-                    CodeCompleter.UNITTEST_FAILURE_REGEX,
-                    last_line,
-                    re.M | re.I,
-                ).group(CodeCompleter.UNITTEST_FAILURE_REGEX_GROUP_INDEX)
-            )
+            return sum([
+                int(count) for count in re.findall(CodeCompleter.UNITTEST_FAILURE_REGEX, last_line, re.M | re.I)
+            ])
 
     def _remove_compiled_code(self):
         """ Removes compiled python files from the code file's location. """
@@ -134,6 +134,7 @@ class CodeCompleter(object):
 
     def complete(self):
         """ Complete all tasks. """
+        print '%s\n\nStarting with Code... \n\n%s' % (LINE, open(self._current_code_f, READ_OPT).read().replace('\n', '\n\t'))
         # Make a copy of the original code file.
         shutil.copyfile(self._original_code_f, CodeCompleter.ORIGINAL_EXTENSION % self._original_code_f)
         num_of_tests_failed = self._run_tests()
@@ -142,11 +143,20 @@ class CodeCompleter(object):
             shutil.copyfile(self._current_code_f, CodeCompleter.PREVIOUS_EXTENSION % self._current_code_f)
             for task_solution in task_solutions:
                 self._attempt_to_solve_task(task_descriptor, task_solution)
+                print '%s\n\nTrying to Reduce %d Errors with...\n\n\t%s' % (
+                    LINE,
+                    num_of_tests_failed,
+                    open(self._current_code_f, READ_OPT).read().replace('\n', '\n\t'),
+                )
+                raw_input()
                 self._remove_compiled_code()
                 updated_num_tests_failed = self._run_tests()
+                if updated_num_tests_failed is None:
+                    updated_num_tests_failed = num_of_tests_failed
                 if updated_num_tests_failed < num_of_tests_failed:
                     num_of_tests_failed = updated_num_tests_failed
                     break
                 else:
                     shutil.copyfile(CodeCompleter.PREVIOUS_EXTENSION % self._current_code_f, self._current_code_f)
         os.remove(CodeCompleter.PREVIOUS_EXTENSION % self._current_code_f)
+        print '%s\n\nFINISHED with %d Errors!!! %s\n\n%s' % (LINE, num_of_tests_failed, ':(' if num_of_tests_failed else ':)', LINE)
