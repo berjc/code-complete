@@ -3,7 +3,6 @@ import inspect
 import importlib
 import types
 
-
 class SnippetAnalyser:
     """ This class analyzes the snippets. This. This is where it all happens.
 
@@ -23,7 +22,6 @@ class SnippetAnalyser:
         self.snippet_word_array = [[]]          # A 2D list of all words
         self.scope_flag = 0                     # A flag to keep track of current scope level
         self.helper = SnippetAnalysisHelper(language_mode)
-        self.module = None
         self.functions = {}                     # A dictionary of functions. Contains
                                                 # { func1 : [ "function stub", { arg1 : type, arg2 : type ...}], ... }
 
@@ -48,10 +46,13 @@ class SnippetAnalyser:
         temp_file.write(self.snippet)
         temp_file.close()
 
-        self.module = importlib.import_module(self.helper.filename[:-3])
+        try:
+            temp_module = importlib.import_module("snippet_analysis." + self.helper.filename[:-3])
+        except:
+            return
 
-        for function in dir(self.module):
-            if not isinstance(self.module.__dict__.get(function), types.FunctionType):
+        for function in dir(temp_module):
+            if not isinstance(temp_module.__dict__.get(function), types.FunctionType):
                 continue
             if function[0] == '_':
                 continue
@@ -59,9 +60,9 @@ class SnippetAnalyser:
                 self.functions[function] = []
         for function in self.functions.keys():
             temp_dict = dict()
-            for argument in inspect.getargspec(getattr(self.module, function))[0]:
+            for argument in inspect.getargspec(getattr(temp_module, function))[0]:
                 temp_dict[argument] = ''
-            self.functions[function] = [inspect.getsourcelines(getattr(self.module, function)), temp_dict]
+            self.functions[function] = [inspect.getsourcelines(getattr(temp_module, function)), temp_dict]
 
     def prepare_data(self):
         """ This function does the pre-analysis by preparing the data for analysis. This also populates line_dict
@@ -84,7 +85,7 @@ class SnippetAnalyser:
     
         for line in snippet.split('\n'):
             snippet_array.append(line.split(" "))
-            
+
         self.snippet_word_array = snippet_array
         
     def find_types(self):

@@ -8,6 +8,7 @@ import itertools
 import optparse
 import os
 import types
+from snippet_analysis.snippet_controller import SnippetController
 
 from code_completer import CodeCompleter
 from code_snippet_generator import CodeSnippetGenerator
@@ -27,6 +28,7 @@ class TaskSolutionGenerator(object):
         for task_descriptor, code_snippets in zip(self._task_descriptors, self._code_snippets):
             task_solutions = []
             for code_snippet in code_snippets:
+<<<<<<< HEAD
                 tmp = 'tmp_program_jail_%s.py' % id(code_snippet)
                 open('code_complete/%s' % tmp, 'w').write(code_snippet + '\nALL_GLOBALS = dir()')
                 stub_names = []
@@ -51,6 +53,16 @@ class TaskSolutionGenerator(object):
                     os.remove('%sc' % tmp)
                 except OSError:
                     pass
+                snippet_controller = SnippetController(code_snippet, task_descriptor.get_task_input_info(),
+                                                       task_descriptor.get_task_description())
+                match_functions, detail_functions = snippet_controller.find_snippet()
+
+                for function in match_functions:
+                    for combination in detail_functions[function][2]:
+                        task_solutions.append([''.join(detail_functions[function][0][0]),
+                                            [x[0] for x in combination],
+                                            task_descriptor.get_task_output_info().keys(),
+                                            function])
             self._task_solutions.append(task_solutions)
         print self._task_solutions
         return self._task_solutions
